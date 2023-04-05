@@ -31,14 +31,40 @@
       button:hover {
         background-color: #3e8e41;
       }
+      label {
+        display: block;
+        font-size: 2em;
+        margin-top: 20px;
+      }
+      input[type="radio"] {
+        display: none;
+      }
+      input[type="radio"] + span {
+        display: inline-block;
+        font-size: 2em;
+        padding: 10px;
+        border-radius: 10px;
+        cursor: pointer;
+        margin: 0 10px;
+      }
+      input[type="radio"]:checked + span {
+        background-color: #4caf50;
+      }
     </style>
   </head>
   <body>
     <h1>The Tower of Mystery</h1>
-    <p>Welcome to The Tower of Mystery! You are standing at the entrance of a mysterious tower that no one has ever returned from. Your mission is to explore the tower, defeat monsters, and find treasure.</p>
-    <button>Start Game</button>
-    <script src="script.js"></script>
+    <p>Welcome to The Tower of Mystery! You are currently on Level 1.</p>
+    <p>You are a Warrior, and you have the following stats:</p>
+    <ul>
+      <li>Health: 100</li>
+      <li>Attack: 20</li>
+      <li>Defense: 10</li>
+    </ul>
+    <button>Attack Monster</button>
+    <button>Explore Next Room</button>
     <a href="index.html">Home</a>
-    <a href="character.html">Character Selection</a>
+    <a href="character.html">Change Character</a>
+    <script src="script.js"></script>
   </body>
 </html>
