@@ -12,5 +12,7 @@ function selectCharacter(event) {
 }
 
 // Attach event listeners to the appropriate elements
-document.getElementById("start-btn").addEventListener("click", startGame);
-document.querySelector("form").addEventListener("submit", selectCharacter);
+document.addEventListener("DOMContentLoaded", function () {
+  document.getElementById("start-btn").addEventListener("click", startGame);
+  document.querySelector("form").addEventListener("submit", selectCharacter);
+});
