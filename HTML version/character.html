@@ -14,28 +14,9 @@
         font-size: 3em;
         margin-bottom: 20px;
       }
-      form {
-        display: inline-block;
-        border: 3px solid #4caf50;
-        border-radius: 10px;
-        padding: 20px;
-        margin-top: 50px;
-      }
-      input[type="radio"] {
-        display: none;
-      }
-      label {
-        display: inline-block;
-        background-color: #4caf50;
-        color: #ffffff;
+      p {
         font-size: 2em;
-        padding: 20px;
-        border-radius: 10px;
-        cursor: pointer;
-        margin-right: 10px;
-      }
-      input[type="radio"]:checked + label {
-        background-color: #3e8e41;
+        margin-top: 50px;
       }
       button {
         background-color: #4caf50;
@@ -50,20 +31,46 @@
       button:hover {
         background-color: #3e8e41;
       }
+      label {
+        display: block;
+        font-size: 2em;
+        margin-top: 20px;
+      }
+      input[type="radio"] {
+        display: none;
+      }
+      input[type="radio"] + span {
+        display: inline-block;
+        font-size: 2em;
+        padding: 10px;
+        border-radius: 10px;
+        cursor: pointer;
+        margin: 0 10px;
+      }
+      input[type="radio"]:checked + span {
+        background-color: #4caf50;
+      }
     </style>
   </head>
   <body>
     <h1>The Tower of Mystery</h1>
+    <p>Please select your character:</p>
     <form>
-      <h2>Select Your Character:</h2>
-      <input type="radio" id="character1" name="character" value="character1">
-      <label for="character1">Character 1</label>
-      <input type="radio" id="character2" name="character" value="character2">
-      <label for="character2">Character 2</label>
-      <input type="radio" id="character3" name="character" value="character3">
-      <label for="character3">Character 3</label>
-      <button type="submit">Start Game</button>
+      <label>
+        <input type="radio" name="character" value="Warrior">
+        <span>Warrior</span>
+      </label>
+      <label>
+        <input type="radio" name="character" value="Rogue">
+        <span>Rogue</span>
+      </label>
+      <label>
+        <input type="radio" name="character" value="Mage">
+        <span>Mage</span>
+      </label>
+      <button type="submit">Select Character</button>
     </form>
     <script src="script.js"></script>
+    <a href="index.html">Home</a>
   </body>
 </html>
