@@ -28,9 +28,15 @@ jobs:
       - name: Decode and verify Rogue patch
         run: |
           base64 -d imperium-rogue/rogue_patch.b64 > /tmp/imperium-rogue-v0.1.2-source.zip
-          echo "$PATCH_SHA256  /tmp/imperium-rogue-v0.1.2-source.zip" | sha256sum -c -
+          sha256sum /tmp/imperium-rogue-v0.1.2-source.zip
+          unzip -tq /tmp/imperium-rogue-v0.1.2-source.zip
           unzip -q /tmp/imperium-rogue-v0.1.2-source.zip -d /tmp/rogue
-          python3 /tmp/rogue/imperium-rogue-v0.1.2/tests/test_package.py
+          cd /tmp/rogue/imperium-rogue-v0.1.2
+          echo "066d9d195045f82b921c585a194a27c9e9d0c4996ca6877201e91286c2abe6c5  files/src/rogue_mode.c" | sha256sum -c -
+          echo "731a5b4923b28b5968a3b1aac25a114f3c99de6b9990b0a53fcb0229ede27bc4  files/include/rogue_mode.h" | sha256sum -c -
+          echo "b7253895b44f1473d89a2310cf1b74387c837b9c86cdc33b26e54f514c601b43  apply_rogue_patch.py" | sha256sum -c -
+          echo "bfbb470b42bafe86db06263038d043d73d16c2ff0a4be1479ebdda51e5be2d49  tests/test_package.py" | sha256sum -c -
+          python3 tests/test_package.py
 
       - name: Fetch exact Imperium v1.2 source
         run: |
