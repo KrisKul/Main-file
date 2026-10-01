@@ -1,6 +1,12 @@
 name: Imperium Rogue Build
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/imperium-rogue.yml"
+      - "imperium-rogue/**"
   pull_request:
     branches:
       - main
@@ -15,7 +21,7 @@ jobs:
     container: devkitpro/devkitarm
     env:
       TARGET_COMMIT: f8c9fbb73cc4f3853b056aebfc427d6e4822ea9b
-      PATCH_SHA256: 72d1cb85322ae006fb6e9aef078f2c973981aefa65a2bebf50184ea9b1d51e47
+      PATCH_SHA256: c2bdb91f1871f46d1a54e58706366bded3fadbe1ef55fb9e358cc3b10e0a791a
     steps:
       - name: Checkout build harness
         uses: actions/checkout@v4
@@ -23,19 +29,19 @@ jobs:
       - name: Install host dependencies
         run: |
           apt-get update
-          apt-get install -y git unzip python3 build-essential libpng-dev libelf-dev golang-go gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi
+          apt-get install -y git unzip python3 build-essential libpng-dev libelf-dev
 
       - name: Decode and verify Rogue patch
         run: |
           base64 -d imperium-rogue/rogue_patch.b64 > /tmp/imperium-rogue-v0.1.2-source.zip
-          sha256sum /tmp/imperium-rogue-v0.1.2-source.zip
+          echo "$PATCH_SHA256  /tmp/imperium-rogue-v0.1.2-source.zip" | sha256sum -c -
           unzip -tq /tmp/imperium-rogue-v0.1.2-source.zip
           unzip -q /tmp/imperium-rogue-v0.1.2-source.zip -d /tmp/rogue
           cd /tmp/rogue/imperium-rogue-v0.1.2
-          echo "066d9d195045f82b921c585a194a27c9e9d0c4996ca6877201e91286c2abe6c5  files/src/rogue_mode.c" | sha256sum -c -
+          echo "fa98466d2258a26c1a7ffb0a82df20052070913cd5f6812afd4c8fd06c77c980  files/src/rogue_mode.c" | sha256sum -c -
           echo "731a5b4923b28b5968a3b1aac25a114f3c99de6b9990b0a53fcb0229ede27bc4  files/include/rogue_mode.h" | sha256sum -c -
-          echo "b7253895b44f1473d89a2310cf1b74387c837b9c86cdc33b26e54f514c601b43  apply_rogue_patch.py" | sha256sum -c -
-          echo "bfbb470b42bafe86db06263038d043d73d16c2ff0a4be1479ebdda51e5be2d49  tests/test_package.py" | sha256sum -c -
+          echo "195b6fa1378c24a1d44b198e35e5f4dc4c2034e27624e2e9551a9cf73b632caf  apply_rogue_patch.py" | sha256sum -c -
+          echo "435924f3eebb37228ca7fa8a651fbbe3f85cdbedc39bddcc6366192d236db6e4  tests/test_package.py" | sha256sum -c -
           python3 tests/test_package.py
 
       - name: Fetch exact Imperium v1.2 source
@@ -43,13 +49,6 @@ jobs:
           git clone https://github.com/iriv24/pokeemerald-expansion.git /tmp/imperium
           git -C /tmp/imperium checkout "$TARGET_COMMIT"
           test "$(git -C /tmp/imperium rev-parse HEAD)" = "$TARGET_COMMIT"
-
-      - name: Install pinned poryscript
-        run: |
-          git clone https://github.com/huderlem/poryscript.git /tmp/imperium/tools/poryscript
-          git -C /tmp/imperium/tools/poryscript checkout 67cdd2342fa9d22f0cd80effca4d3943b7bf8d2c
-          make -C /tmp/imperium/tools/poryscript
-          test -x /tmp/imperium/tools/poryscript/poryscript
 
       - name: Apply Rogue Mode
         run: |
@@ -59,10 +58,13 @@ jobs:
 
       - name: Build ROM
         run: |
-          arm-none-eabi-gcc --version
-          make -C /tmp/imperium -j"$(nproc)" -O all COMPARE=0 UNUSED_ERROR=0 TOOLCHAIN=
+          make -C /tmp/imperium -j"$(nproc)" -O all COMPARE=0 UNUSED_ERROR=0
           test -f /tmp/imperium/pokeemerald.gba
           sha256sum /tmp/imperium/pokeemerald.gba
+
+      - name: Test
+        run: |
+          make -C /tmp/imperium -j"$(nproc)" check COMPARE=0 UNUSED_ERROR=0
 
       - name: Upload ROM and symbols
         if: success()
