@@ -1,9 +1,9 @@
 name: Imperium Rogue Build
 
 on:
-  push:
+  pull_request:
     branches:
-      - imperium-rogue-build
+      - main
   workflow_dispatch:
 
 permissions:
