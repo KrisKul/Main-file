@@ -15,7 +15,7 @@ jobs:
     container: devkitpro/devkitarm
     env:
       TARGET_COMMIT: f8c9fbb73cc4f3853b056aebfc427d6e4822ea9b
-      PATCH_SHA256: ff87054d4a512d6b3648cc5a1d7c138b9b5d38761260213ca681411114f66e20
+      PATCH_SHA256: 72d1cb85322ae006fb6e9aef078f2c973981aefa65a2bebf50184ea9b1d51e47
     steps:
       - name: Checkout build harness
         uses: actions/checkout@v4
@@ -27,10 +27,10 @@ jobs:
 
       - name: Decode and verify Rogue patch
         run: |
-          base64 -d imperium-rogue/rogue_patch.b64 > /tmp/imperium-rogue-v0.1.1-source.zip
-          echo "$PATCH_SHA256  /tmp/imperium-rogue-v0.1.1-source.zip" | sha256sum -c -
-          unzip -q /tmp/imperium-rogue-v0.1.1-source.zip -d /tmp/rogue
-          python3 /tmp/rogue/imperium-rogue-v0.1.1/tests/test_package.py
+          base64 -d imperium-rogue/rogue_patch.b64 > /tmp/imperium-rogue-v0.1.2-source.zip
+          echo "$PATCH_SHA256  /tmp/imperium-rogue-v0.1.2-source.zip" | sha256sum -c -
+          unzip -q /tmp/imperium-rogue-v0.1.2-source.zip -d /tmp/rogue
+          python3 /tmp/rogue/imperium-rogue-v0.1.2/tests/test_package.py
 
       - name: Fetch exact Imperium v1.2 source
         run: |
@@ -47,7 +47,7 @@ jobs:
 
       - name: Apply Rogue Mode
         run: |
-          python3 /tmp/rogue/imperium-rogue-v0.1.1/apply_rogue_patch.py /tmp/imperium
+          python3 /tmp/rogue/imperium-rogue-v0.1.2/apply_rogue_patch.py /tmp/imperium
           git -C /tmp/imperium diff --check
           git -C /tmp/imperium status --short
 
@@ -62,7 +62,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: imperium-rogue-v0.1.1
+          name: imperium-rogue-v0.1.2
           if-no-files-found: error
           retention-days: 30
           path: |
