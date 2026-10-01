@@ -41,6 +41,15 @@ jobs:
           git -C imperium checkout "$IMPERIUM_COMMIT"
           test "$(git -C imperium rev-parse HEAD)" = "$IMPERIUM_COMMIT"
 
+      - name: Install pinned poryscript
+        shell: bash
+        run: |
+          rm -rf imperium/tools/poryscript
+          git clone https://github.com/huderlem/poryscript.git imperium/tools/poryscript
+          git -C imperium/tools/poryscript checkout 67cdd2342fa9d22f0cd80effca4d3943b7bf8d2c
+          make -C imperium/tools/poryscript
+          test -x imperium/tools/poryscript/poryscript
+
       - name: Apply Rogue patch
         shell: bash
         run: |
