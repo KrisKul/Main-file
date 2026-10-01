@@ -38,6 +38,13 @@ jobs:
           git -C /tmp/imperium checkout "$TARGET_COMMIT"
           test "$(git -C /tmp/imperium rev-parse HEAD)" = "$TARGET_COMMIT"
 
+      - name: Install pinned poryscript
+        run: |
+          git clone https://github.com/huderlem/poryscript.git /tmp/imperium/tools/poryscript
+          git -C /tmp/imperium/tools/poryscript checkout 67cdd2342fa9d22f0cd80effca4d3943b7bf8d2c
+          make -C /tmp/imperium/tools/poryscript
+          test -x /tmp/imperium/tools/poryscript/poryscript
+
       - name: Apply Rogue Mode
         run: |
           python3 /tmp/rogue/imperium-rogue-v0.1.1/apply_rogue_patch.py /tmp/imperium
