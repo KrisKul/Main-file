@@ -66,6 +66,61 @@ jobs:
           git -C /tmp/imperium diff --check
           git -C /tmp/imperium status --short
 
+      - name: Reuse decompression buffer for Rogue flash staging
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("/tmp/imperium/src/rogue_mode.c")
+          s = p.read_text()
+
+          def replace_once(old, new, label):
+              global s
+              if old not in s:
+                  raise SystemExit(f"missing EWRAM patch anchor: {label}")
+              s = s.replace(old, new, 1)
+
+          if '#include "decompress.h"' not in s:
+              replace_once('#include "battle.h"\n',
+                           '#include "battle.h"\n#include "decompress.h"\n',
+                           "decompress include")
+
+          replace_once(
+              'static EWRAM_DATA u8 sRogueSectorBuffer[SECTOR_COUNTER_OFFSET] = {0};\n',
+              '',
+              "remove 4KB Rogue sector staging buffer")
+
+          replace_once(
+              '    memset(sRogueSectorBuffer, 0, sizeof(sRogueSectorBuffer));\n'
+              '    if (TryReadSpecialSaveSector(ROGUE_SAVE_SECTOR, sRogueSectorBuffer) != SAVE_STATUS_OK)\n',
+              '    memset(gDecompressionBuffer, 0, SECTOR_COUNTER_OFFSET);\n'
+              '    if (TryReadSpecialSaveSector(ROGUE_SAVE_SECTOR, gDecompressionBuffer) != SAVE_STATUS_OK)\n',
+              "read staging buffer")
+
+          replace_once(
+              '    memcpy(&sRogueSave, sRogueSectorBuffer, sizeof(sRogueSave));\n',
+              '    memcpy(&sRogueSave, gDecompressionBuffer, sizeof(sRogueSave));\n',
+              "read copy")
+
+          replace_once(
+              '    memset(sRogueSectorBuffer, 0, sizeof(sRogueSectorBuffer));\n',
+              '    memset(gDecompressionBuffer, 0, SECTOR_COUNTER_OFFSET);\n',
+              "write staging buffer")
+
+          replace_once(
+              '    memcpy(sRogueSectorBuffer, &sRogueSave, sizeof(sRogueSave));\n'
+              '    TryWriteSpecialSaveSector(ROGUE_SAVE_SECTOR, sRogueSectorBuffer);\n',
+              '    memcpy(gDecompressionBuffer, &sRogueSave, sizeof(sRogueSave));\n'
+              '    TryWriteSpecialSaveSector(ROGUE_SAVE_SECTOR, gDecompressionBuffer);\n',
+              "write copy")
+
+          if "sRogueSectorBuffer" in s:
+              raise SystemExit("Rogue staging buffer reference remains")
+          p.write_text(s)
+          print("Removed dedicated 4KB Rogue EWRAM staging buffer.")
+          PY
+          git -C /tmp/imperium diff --check
+
       - name: Build ROM
         shell: bash
         run: |
