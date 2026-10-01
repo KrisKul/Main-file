@@ -53,7 +53,8 @@ jobs:
 
       - name: Build ROM
         run: |
-          arm-none-eabi-gcc --version\n          make -C /tmp/imperium -j"$(nproc)" -O all COMPARE=0 UNUSED_ERROR=0 TOOLCHAIN=
+          arm-none-eabi-gcc --version
+          make -C /tmp/imperium -j"$(nproc)" -O all COMPARE=0 UNUSED_ERROR=0 TOOLCHAIN=
           test -f /tmp/imperium/pokeemerald.gba
           sha256sum /tmp/imperium/pokeemerald.gba
 
