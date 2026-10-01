@@ -29,7 +29,7 @@ jobs:
       - name: Install host dependencies
         run: |
           apt-get update
-          apt-get install -y git unzip python3 build-essential libpng-dev libelf-dev
+          apt-get install -y git unzip python3 build-essential libpng-dev libelf-dev golang-go
 
       - name: Decode and verify Rogue patch
         run: |
@@ -49,6 +49,14 @@ jobs:
           git clone https://github.com/iriv24/pokeemerald-expansion.git /tmp/imperium
           git -C /tmp/imperium checkout "$TARGET_COMMIT"
           test "$(git -C /tmp/imperium rev-parse HEAD)" = "$TARGET_COMMIT"
+
+      - name: Install pinned poryscript
+        run: |
+          rm -rf /tmp/imperium/tools/poryscript
+          git clone https://github.com/huderlem/poryscript.git /tmp/imperium/tools/poryscript
+          git -C /tmp/imperium/tools/poryscript checkout 67cdd2342fa9d22f0cd80effca4d3943b7bf8d2c
+          make -C /tmp/imperium/tools/poryscript
+          test -x /tmp/imperium/tools/poryscript/poryscript
 
       - name: Apply Rogue Mode
         run: |
