@@ -23,7 +23,7 @@ jobs:
       - name: Install host dependencies
         run: |
           apt-get update
-          apt-get install -y git unzip python3 build-essential libpng-dev libelf-dev
+          apt-get install -y git unzip python3 build-essential libpng-dev libelf-dev golang-go
 
       - name: Decode and verify Rogue patch
         run: |
