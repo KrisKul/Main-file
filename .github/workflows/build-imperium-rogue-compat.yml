@@ -1,0 +1,45 @@
+name: Imperium Rogue Compat Build
+
+on:
+  push:
+    branches:
+      - imperium-rogue-build
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: imperium-rogue-build
+
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y build-essential git unzip python3 golang-go libpng-dev libelf-dev gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi
+
+      - name: Prepare sources
+        run: |
+          cat rogue_patch/part1.b64 rogue_patch/part2.b64 rogue_patch/part3.b64 rogue_patch/part4.b64 rogue_patch/part5.b64 | tr -d '\n\r ' | base64 -d > /tmp/rogue.zip
+          echo "ff87054d4a512d6b3648cc5a1d7c138b9b5d38761260213ca681411114f66e20  /tmp/rogue.zip" | sha256sum -c -
+          unzip -q /tmp/rogue.zip -d /tmp/rogue
+          git clone https://github.com/iriv24/pokeemerald-expansion.git imperium
+          git -C imperium checkout f8c9fbb73cc4f3853b056aebfc427d6e4822ea9b
+          rm -rf imperium/tools/poryscript
+          git clone https://github.com/huderlem/poryscript.git imperium/tools/poryscript
+          git -C imperium/tools/poryscript checkout 67cdd2342fa9d22f0cd80effca4d3943b7bf8d2c
+          make -C imperium/tools/poryscript
+          python3 /tmp/rogue/imperium-rogue-v0.1.1/apply_rogue_patch.py "$GITHUB_WORKSPACE/imperium"
+
+      - name: Build
+        run: |
+          arm-none-eabi-gcc --version
+          make -C imperium -j"$(nproc)" COMPARE=0 UNUSED_ERROR=0 TOOLCHAIN=
+          cp imperium/pokeemerald.gba imperium/Imperium-Rogue-v0.1.1.gba
+          sha256sum imperium/Imperium-Rogue-v0.1.1.gba > imperium/Imperium-Rogue-v0.1.1.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Imperium-Rogue-v0.1.1
+          path: |
+            imperium/Imperium-Rogue-v0.1.1.gba
+            imperium/Imperium-Rogue-v0.1.1.sha256

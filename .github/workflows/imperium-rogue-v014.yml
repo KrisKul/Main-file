@@ -1,0 +1,143 @@
+name: Imperium Rogue v0.1.4
+
+on:
+  push:
+    branches:
+      - imperium-rogue-build
+    paths:
+      - "imperium-rogue-v014/**"
+      - ".github/workflows/imperium-rogue-v014.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitarm
+    env:
+      TARGET_COMMIT: f8c9fbb73cc4f3853b056aebfc427d6e4822ea9b
+      PATCH_SHA256: 7f4ca48fdb086cbc0cfb7521d7a95f8e3f9101e9590c409eb4f077bb87de2610
+
+    steps:
+      - name: Checkout build harness
+        uses: actions/checkout@v4
+        with:
+          ref: imperium-rogue-build
+
+      - name: Install host dependencies
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y git unzip python3 build-essential libpng-dev libelf-dev golang-go gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi
+
+      - name: Reassemble and verify v0.1.4 patch
+        shell: bash
+        run: |
+          cat imperium-rogue-v014/part-*.b64 | tr -d '\n\r ' | base64 -d > /tmp/imperium-rogue-v0.1.4-source.zip
+          echo "$PATCH_SHA256  /tmp/imperium-rogue-v0.1.4-source.zip" | sha256sum -c -
+          unzip -tq /tmp/imperium-rogue-v0.1.4-source.zip
+          rm -rf /tmp/rogue
+          mkdir -p /tmp/rogue
+          unzip -q /tmp/imperium-rogue-v0.1.4-source.zip -d /tmp/rogue
+          python3 /tmp/rogue/imperium-rogue-v0.1.4/tests/test_package.py
+
+      - name: Fetch exact Imperium v1.2 source
+        shell: bash
+        run: |
+          git clone https://github.com/iriv24/pokeemerald-expansion.git /tmp/imperium
+          git -C /tmp/imperium checkout "$TARGET_COMMIT"
+          test "$(git -C /tmp/imperium rev-parse HEAD)" = "$TARGET_COMMIT"
+
+      - name: Install pinned poryscript
+        shell: bash
+        run: |
+          rm -rf /tmp/imperium/tools/poryscript
+          git clone https://github.com/huderlem/poryscript.git /tmp/imperium/tools/poryscript
+          git -C /tmp/imperium/tools/poryscript checkout 67cdd2342fa9d22f0cd80effca4d3943b7bf8d2c
+          make -C /tmp/imperium/tools/poryscript
+          test -x /tmp/imperium/tools/poryscript/poryscript
+
+      - name: Apply Rogue Mode v0.1.4
+        shell: bash
+        run: |
+          python3 /tmp/rogue/imperium-rogue-v0.1.4/apply_rogue_patch.py /tmp/imperium
+          git -C /tmp/imperium diff --check
+          git -C /tmp/imperium status --short
+
+      - name: Reuse decompression buffer for Rogue flash staging
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("/tmp/imperium/src/rogue_mode.c")
+          s = p.read_text()
+
+          def replace_once(old, new, label):
+              global s
+              if old not in s:
+                  raise SystemExit(f"missing EWRAM patch anchor: {label}")
+              s = s.replace(old, new, 1)
+
+          if '#include "decompress.h"' not in s:
+              replace_once('#include "battle.h"\n',
+                           '#include "battle.h"\n#include "decompress.h"\n',
+                           "decompress include")
+
+          replace_once(
+              'static EWRAM_DATA u8 sRogueSectorBuffer[SECTOR_COUNTER_OFFSET] = {0};\n',
+              '',
+              "remove 4KB Rogue sector staging buffer")
+
+          replace_once(
+              '    memset(sRogueSectorBuffer, 0, sizeof(sRogueSectorBuffer));\n'
+              '    if (TryReadSpecialSaveSector(ROGUE_SAVE_SECTOR, sRogueSectorBuffer) != SAVE_STATUS_OK)\n',
+              '    memset(gDecompressionBuffer, 0, SECTOR_COUNTER_OFFSET);\n'
+              '    if (TryReadSpecialSaveSector(ROGUE_SAVE_SECTOR, gDecompressionBuffer) != SAVE_STATUS_OK)\n',
+              "read staging buffer")
+
+          replace_once(
+              '    memcpy(&sRogueSave, sRogueSectorBuffer, sizeof(sRogueSave));\n',
+              '    memcpy(&sRogueSave, gDecompressionBuffer, sizeof(sRogueSave));\n',
+              "read copy")
+
+          replace_once(
+              '    memset(sRogueSectorBuffer, 0, sizeof(sRogueSectorBuffer));\n',
+              '    memset(gDecompressionBuffer, 0, SECTOR_COUNTER_OFFSET);\n',
+              "write staging buffer")
+
+          replace_once(
+              '    memcpy(sRogueSectorBuffer, &sRogueSave, sizeof(sRogueSave));\n'
+              '    TryWriteSpecialSaveSector(ROGUE_SAVE_SECTOR, sRogueSectorBuffer);\n',
+              '    memcpy(gDecompressionBuffer, &sRogueSave, sizeof(sRogueSave));\n'
+              '    TryWriteSpecialSaveSector(ROGUE_SAVE_SECTOR, gDecompressionBuffer);\n',
+              "write copy")
+
+          if "sRogueSectorBuffer" in s:
+              raise SystemExit("Rogue staging buffer reference remains")
+          p.write_text(s)
+          print("Removed dedicated 4KB Rogue EWRAM staging buffer.")
+          PY
+          git -C /tmp/imperium diff --check
+
+      - name: Build ROM
+        shell: bash
+        run: |
+          arm-none-eabi-gcc --version
+          make -C /tmp/imperium -j"$(nproc)" -O all COMPARE=0 UNUSED_ERROR=0 TOOLCHAIN=
+          test -s /tmp/imperium/pokeemerald.gba
+          cp /tmp/imperium/pokeemerald.gba /tmp/imperium/Imperium-Rogue-v0.1.4.gba
+          sha256sum /tmp/imperium/Imperium-Rogue-v0.1.4.gba > /tmp/imperium/Imperium-Rogue-v0.1.4.sha256
+
+      - name: Upload ROM and symbols
+        uses: actions/upload-artifact@v4
+        with:
+          name: Imperium-Rogue-v0.1.4
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            /tmp/imperium/Imperium-Rogue-v0.1.4.gba
+            /tmp/imperium/Imperium-Rogue-v0.1.4.sha256
+            /tmp/imperium/pokeemerald.map
+            /tmp/imperium/pokeemerald.sym
