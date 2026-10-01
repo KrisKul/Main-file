@@ -21,7 +21,7 @@ jobs:
     container: devkitpro/devkitarm
     env:
       TARGET_COMMIT: f8c9fbb73cc4f3853b056aebfc427d6e4822ea9b
-      PATCH_SHA256: c2bdb91f1871f46d1a54e58706366bded3fadbe1ef55fb9e358cc3b10e0a791a
+      PATCH_SHA256: 129533a89805265c83ade8b5314dc0ab98c60ae148bc275196421afc1794cb8f
     steps:
       - name: Checkout build harness
         uses: actions/checkout@v4
@@ -38,10 +38,10 @@ jobs:
           unzip -tq /tmp/imperium-rogue-v0.1.2-source.zip
           unzip -q /tmp/imperium-rogue-v0.1.2-source.zip -d /tmp/rogue
           cd /tmp/rogue/imperium-rogue-v0.1.2
-          echo "fa98466d2258a26c1a7ffb0a82df20052070913cd5f6812afd4c8fd06c77c980  files/src/rogue_mode.c" | sha256sum -c -
+          echo "2e1f3a426b23658f757c541c0c1014ef1c904b0e9188f9f0c0bdcf9ca7447d5f  files/src/rogue_mode.c" | sha256sum -c -
           echo "731a5b4923b28b5968a3b1aac25a114f3c99de6b9990b0a53fcb0229ede27bc4  files/include/rogue_mode.h" | sha256sum -c -
           echo "195b6fa1378c24a1d44b198e35e5f4dc4c2034e27624e2e9551a9cf73b632caf  apply_rogue_patch.py" | sha256sum -c -
-          echo "435924f3eebb37228ca7fa8a651fbbe3f85cdbedc39bddcc6366192d236db6e4  tests/test_package.py" | sha256sum -c -
+          echo "31f25ca492a936f3c5aab32a0ef7cef67fde6d6bcaac220ad9294d336a148545  tests/test_package.py" | sha256sum -c -
           python3 tests/test_package.py
 
       - name: Fetch exact Imperium v1.2 source
